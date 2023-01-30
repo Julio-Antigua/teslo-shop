@@ -31,6 +31,11 @@ export class CreateProductDto {
 
     @IsIn(['men','woman','kid','unisex']) //este decorrador dice que este ditio sera tipo de lo que este en este arreglo que tendra men, woman, ...
     gender: string;
+
+    @IsString({each:true})
+    @IsArray()
+    @IsOptional()
+    tags: string[];
 }
 
 // Aqui se estara utilizando las librerias class-validator y class-transformer
