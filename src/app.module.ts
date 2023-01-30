@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductsModule } from './products/products.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -18,7 +19,9 @@ import { ProductsModule } from './products/products.module';
       synchronize: true  // funcionas para cuando creamos un cambio en las entidades automatica mente las sincronizas con los cambios nuevos a la base de datos
     }),
 
-    ProductsModule
+    ProductsModule,
+
+    CommonModule
   ],
 })
 export class AppModule {}
