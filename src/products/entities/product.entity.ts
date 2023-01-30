@@ -4,7 +4,7 @@ import { BeforeInsert, BeforeUpdate, Column, Entity, PrimaryGeneratedColumn } fr
 export class Product {
 
     @PrimaryGeneratedColumn('uuid')
-    id: number;
+    id: string;
 
     @Column('text', {
         unique: true
@@ -44,6 +44,12 @@ export class Product {
     gender: string;
 
     // tags
+    @Column({
+        type: 'text',
+        array: true,
+        default: []
+    })
+    tags: string[];
     // images
 
     @BeforeInsert()
@@ -57,5 +63,12 @@ export class Product {
             .replaceAll("'",'')
     }
 
-    // @BeforeUpdate()
+    @BeforeUpdate()
+    checkSlugUpdate(){
+        this.slug = this.slug
+            .toLowerCase()
+            .replaceAll(' ','_')
+            .replaceAll("'",'')
+    }
+
 }
