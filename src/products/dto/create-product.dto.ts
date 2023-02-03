@@ -36,6 +36,11 @@ export class CreateProductDto {
     @IsArray()
     @IsOptional()
     tags: string[];
+
+    @IsString({each:true})
+    @IsArray()
+    @IsOptional()
+    images?: string[];
 }
 
 // Aqui se estara utilizando las librerias class-validator y class-transformer
