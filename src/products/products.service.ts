@@ -3,11 +3,11 @@ import { BadRequestException, NotFoundException } from '@nestjs/common/exception
 import { Logger } from '@nestjs/common/services';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PaginationDto } from 'src/common/dtos/pagination.dto';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { Product } from './entities/product.entity';
 import { validate as isUUID } from 'uuid'
+import { Product,ProductImage } from './entities';
 
 @Injectable()
 export class ProductsService {
@@ -17,18 +17,35 @@ export class ProductsService {
   constructor(
 
     @InjectRepository(Product)
-    private readonly  productRepository: Repository<Product>
+    private readonly  productRepository: Repository<Product>,
+
+    @InjectRepository(ProductImage)
+    private readonly ProductImageRepository: Repository<ProductImage>,
+
+    private readonly dataSource: DataSource,
 
   ){}
 
   // TODO: paginar
-  findAll(paginationDto: PaginationDto) {
+  async findAll(paginationDto: PaginationDto) {
     const { limit = 10, offset = 0 } = paginationDto;
-    return this.productRepository.find({
+    const products = await this.productRepository.find({
       take: limit,
-      skip: offset
+      skip: offset,
       // TODO: relaciones
+      relations: {
+        images: true,
+      }
     });
+    return products.map( (product) => ({
+      ...product,
+      images: product.images.map(img => img.url)
+    }))
+    // Forma con destructuracion de argumentos
+    // return products.map( ({ images, ...rest}) => ({
+    //   ...rest,
+    //   images:images.map(img => img.url)
+    // }))
   }
 
   async findOne(term: string) {
@@ -37,12 +54,14 @@ export class ProductsService {
     if( isUUID(term)){
       product = await this.productRepository.findOneBy({id:term});
     }else{
-      const queryBuilder = this.productRepository.createQueryBuilder();
+      const queryBuilder = this.productRepository.createQueryBuilder('prod');
       product = await queryBuilder
       .where(`UPPER(title) =:title or slug =:slug`, {
         title: term.toUpperCase(),
         slug: term.toLowerCase()
-      }).getOne();
+      })
+      .leftJoinAndSelect('prod.images', 'prodImages')
+      .getOne();
     }
 
     if( !product ) 
@@ -51,14 +70,25 @@ export class ProductsService {
     return product;
   }
 
+  async findOnePlain( term: string){
+    const { images = [], ...rest } = await this.findOne(term);
+    return {
+      ...rest,
+      images: images.map(image => image.url)
+    }
+  }
+
   async create(createProductDto: CreateProductDto) {
     
     try{
-
-      const product = this.productRepository.create(createProductDto);
+      const { images = [], ...productDetails /* operador rest*/ } = createProductDto;
+      const product = this.productRepository.create({
+        ...productDetails /*operador spread*/,
+        images: images.map( image => this.ProductImageRepository.create({url: image}) )
+      });
       await this.productRepository.save(product);
 
-      return product;
+      return {...product, images};
 
     }catch(error){
       this.handlerDBExceptions(error);
@@ -68,12 +98,15 @@ export class ProductsService {
 
   async update(id: string, updateProductDto: UpdateProductDto) {
 
-    const product = await this.productRepository.preload({
-      id: id,
-      ...updateProductDto
-    });
+    const {images, ...toUpdate} = updateProductDto;
+
+    const product = await this.productRepository.preload({ id,...toUpdate });
 
     if( !product) throw new NotFoundException(`Product with id: ${id} not found`);
+
+    //Create query runner
+    const queryRunner = this.dataSource.createQueryRunner();
+    
 
     try
     {
