@@ -8,12 +8,16 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { User } from './entities/user.entity';
 import { Jwtstrategy } from './strategies/jwt.strategy';
+import { CommonModule } from 'src/common/common.module';
 
 @Module({
   controllers: [AuthController],
   providers: [AuthService, Jwtstrategy],
   imports: [
+
     ConfigModule,
+
+    CommonModule,
 
     TypeOrmModule.forFeature([ User]),
 
