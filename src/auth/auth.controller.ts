@@ -1,25 +1,34 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Headers, SetMetadata } from '@nestjs/common';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
+
 import { AuthService } from './auth.service';
 import { CreateUserDto, LoginUserDto } from './dto';
-import { AuthGuard } from '@nestjs/passport';
-import { User } from './entities/user.entity';
 import { RawHeaders, GetUser, RoleProtected, Auth } from './decorators';
 import { IncomingHttpHeaders } from 'http';
+
 import { UserRoleGuard } from './guards/user-role/user-role.guard';
 import { ValidRoles } from './interfaces';
+import { User } from './entities/user.entity';
 
-
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
 
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @ApiResponse({status: 201, description: 'User was registed', type: CreateUserDto})
+  @ApiResponse({status: 400, description: 'Bad Reques'})
+  @ApiResponse({status: 403, description: 'Forbidden. Token related.'})
   createUser(@Body() createUserDto: CreateUserDto) {
     return this.authService.createUser(createUserDto);
   }
 
   @Post('login')
+  @ApiResponse({status: 201, description: 'User was login', type: LoginUserDto})
+  @ApiResponse({status: 400, description: 'Bad Reques'})
+  @ApiResponse({status: 403, description: 'Forbidden. Token related.'})
   loginUser(@Body() loginUserDto: LoginUserDto) {
     return this.authService.loginUser(loginUserDto);
   }
