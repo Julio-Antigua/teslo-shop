@@ -1,8 +1,10 @@
-import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { BeforeInsert, BeforeUpdate, Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { ProductImage } from './product-image.entity';
+import { User } from "src/auth/entities/user.entity";
+import { Auditory } from "src/common/interfaces/auditory.interface";
 
 @Entity({name: 'products'})
-export class Product {
+export class Product implements Auditory {
 
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -51,13 +53,59 @@ export class Product {
         default: []
     })
     tags: string[];
+
     // images
     @OneToMany(
         () => ProductImage,
-        (productImage) =>  productImage.product,
+        (productImage) =>  productImage.productId,
         { cascade: true, eager: true }
     )
     images?: ProductImage[];
+
+    @ManyToOne(
+        () => User,
+        ( user ) => user.product,
+        {eager: true}
+    )
+    user: User;
+
+    @Column({
+        type: 'text',
+        default: ''
+    })
+    creationUser: string;
+
+    @Column({
+        type: 'timestamp',
+        default: new Date()
+    })
+    creationDate: Date;
+
+    @Column({
+        type: 'text',
+        default: ''
+    })
+    modificationUser: string;
+    
+    @Column({
+        type: 'timestamp',
+        default: new Date()
+    })
+    modificationDate: Date;
+
+    @BeforeInsert()
+    AuditoryInsert(){
+        this.creationDate = new Date();
+        this.creationUser = this.user.email;
+        this.modificationDate = new Date();
+        this.modificationUser = this.user.email;
+    }
+
+    @BeforeUpdate()
+    AuditoryDateUpdate(){
+        this.modificationUser = this.user.email;
+        this.modificationDate = new Date();
+    }
 
     @BeforeInsert()
     checkSlugInsert(){
@@ -70,6 +118,7 @@ export class Product {
             .replaceAll("'",'')
     }
 
+
     @BeforeUpdate()
     checkSlugUpdate(){
         this.slug = this.slug
@@ -77,5 +126,6 @@ export class Product {
             .replaceAll(' ','_')
             .replaceAll("'",'')
     }
+
 
 }
