@@ -1,13 +1,16 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UploadedFile, UseInterceptors, Res } from '@nestjs/common';
-import { FilesService } from './files.service';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BadRequestException } from '@nestjs/common/exceptions';
+
 import { diskStorage } from 'multer';
-import { fileNamer, fileFilter } from './helpers';
 import { Response } from 'express';
-import { ConfigService } from '@nestjs/config';
 
+import { FilesService } from './files.service';
+import { fileNamer, fileFilter } from './helpers';
 
+@ApiTags('Files')
 @Controller('files')
 export class FilesController {
   constructor(
@@ -33,6 +36,7 @@ export class FilesController {
       filename: fileNamer
     })
   }) )
+  @ApiResponse({status: 201, description: 'File was created', type: fileFilter})
   uploadProductImage( 
     @UploadedFile() file: Express.Multer.File,
   ){
